@@ -1,12 +1,22 @@
 import streamlit as st
 import random
+from transformers import pipeline
 
-st.title("🎹 AI Music Studio (Pro Song Engine)")
+st.set_page_config(page_title="AI Music Studio", layout="wide")
 
-# ----------------------------
-# FULL KEYS
-# ----------------------------
+st.title("🎹 AI Music Studio")
 
+# Load AI model once
+@st.cache_resource
+def load_model():
+    return pipeline(
+        "text-generation",
+        model="distilgpt2"
+    )
+
+generator = load_model()
+
+# All 12 keys
 KEYS = {
     "C": ["C", "Dm", "Em", "F", "G", "Am"],
     "C#": ["C#", "D#m", "Fm", "F#", "G#", "A#m"],
@@ -23,194 +33,167 @@ KEYS = {
 }
 
 MOODS = {
-    "sad": (60, 85),
-    "happy": (110, 140),
-    "chill": (75, 105),
-    "epic": (120, 160)
+    "Sad": (60, 85),
+    "Happy": (110, 140),
+    "Chill": (75, 105),
+    "Epic": (120, 160)
 }
 
-# ----------------------------
-# LYRIC BANK (NO REPETITION)
-# ----------------------------
+# Inputs
+prompt = st.text_input(
+    "🎤 What should the song be about?",
+    placeholder="e.g. Missing someone in London"
+)
 
-VERSE_LINES = {
-    "sad": [
-        "I walk alone through empty streets",
-        "your memory still follows me",
-        "the night keeps whispering your name",
-        "but nothing feels the same",
-        "I try to move but stay the same",
-        "lost inside this quiet pain"
-    ],
-    "happy": [
-        "sunlight hits my window bright",
-        "everything feels just right",
-        "dancing through another day",
-        "nothing getting in my way",
-        "smiling like I own the sky",
-        "feeling like I can fly"
-    ],
-    "chill": [
-        "slow waves drifting in my mind",
-        "leaving all the stress behind",
-        "breathing deep and letting go",
-        "watching all my worries slow",
-        "floating through the evening air",
-        "nothing heavy anywhere"
-    ],
-    "epic": [
-        "rising from the broken ground",
-        "hearing distant battle sound",
-        "fire burning in my soul",
-        "taking back complete control",
-        "nothing ever holds me down",
-        "I will never touch the ground"
-    ]
-}
+language = st.text_input(
+    "🌍 Language",
+    placeholder="English, Hebrew, Yiddish, Spanish..."
+)
 
-CHORUS_LINES = {
-    "sad": [
-        "I still feel you in the rain",
-        "calling out your name again",
-        "but you're gone and I'm alone",
-        "trying to find my way back home"
-    ],
-    "happy": [
-        "we are living in the light",
-        "everything is feeling right",
-        "nothing stopping what we are",
-        "we are shining like a star"
-    ],
-    "chill": [
-        "everything is flowing slow",
-        "letting all the tension go",
-        "this is where I want to be",
-        "lost inside the harmony"
-    ],
-    "epic": [
-        "I will rise above the flame",
-        "nothing ever stays the same",
-        "hear the thunder in my chest",
-        "I will never settle less"
-    ]
-}
+mood = st.selectbox(
+    "🎭 Mood",
+    list(MOODS.keys())
+)
 
-# ----------------------------
-# ENGINE
-# ----------------------------
+key = st.selectbox(
+    "🎹 Key",
+    list(KEYS.keys())
+)
 
-def detect_mood(text):
-    text = text.lower()
-    if any(w in text for w in ["sad", "miss", "lonely", "cry"]):
-        return "sad"
-    if any(w in text for w in ["happy", "love", "party", "fun"]):
-        return "happy"
-    if any(w in text for w in ["calm", "chill", "peace"]):
-        return "chill"
-    return "epic"
-
-def pick_lines(bank, mood):
-    return random.sample(bank[mood], 4)
+# Music functions
+def generate_tempo(mood):
+    low, high = MOODS[mood]
+    return random.randint(low, high)
 
 def generate_chords(key):
-    return random.sample(KEYS[key], 4)
 
-def generate_tempo(mood):
-    return random.randint(*MOODS[mood])
+    common_progressions = [
+        [0, 4, 5, 3],  # I V vi IV
+        [5, 3, 0, 4],  # vi IV I V
+        [0, 5, 3, 4],
+        [0, 3, 4, 0]
+    ]
 
-# ----------------------------
-# SONG BUILDER (FIXED STRUCTURE)
-# ----------------------------
+    prog = random.choice(common_progressions)
 
-def build_song(chords, verse, chorus):
-    song = ""
+    return [KEYS[key][i] for i in prog]
 
-    song += "VERSE 1\n"
-    for i in range(4):
-        song += f"{chords[i]}   {verse[i]}\n"
+def generate_song(prompt, mood, language):
 
-    song += "\nCHORUS\n"
-    for i in range(4):
-        song += f"{chords[i]}   {chorus[i]}\n"
+    song_prompt = f"""
 
-    song += "\nVERSE 2\n"
-    random.shuffle(verse)
-    for i in range(4):
-        song += f"{chords[i]}   {verse[i]}\n"
+Write ORIGINAL song lyrics.
 
-    song += "\nCHORUS\n"
-    for i in range(4):
-        song += f"{chords[i]}   {chorus[i]}\n"
+Language: {language}
+Mood: {mood}
+Theme: {prompt}
 
-    song += "\nOUTRO\n"
-    song += f"{chords[0]}   fading out...\n"
+Structure:
 
-    return song
+VERSE 1
+4 lines
 
-# ----------------------------
-# MUSIC TUTOR (NEW FEATURE)
-# ----------------------------
+CHORUS
+4 lines
 
-def tutor(mood, key, tempo):
-    return f"""
-🎓 MUSIC PRODUCTION GUIDE
+VERSE 2
+4 lines
 
-1. KEY: {key}
-   - This sets the emotional foundation of your track.
+CHORUS
+4 lines
 
-2. MOOD: {mood}
-   - Drives melody style + lyric emotion.
+BRIDGE
+4 lines
 
-3. TEMPO: {tempo} BPM
-   - Slow (60–85): emotional / sad / ambient
-   - Mid (85–120): chill / pop
-   - Fast (120–160): energetic / epic
+CHORUS
+4 lines
 
-4. CHORDS
-   - Use I–V–vi–IV style movement for mainstream sound
-   - Minor chords = emotional weight
-   - Major chords = brightness
+Only output lyrics.
 
-5. SONG STRUCTURE
-   - Verse: storytelling
-   - Chorus: emotional hook (repeatable idea)
-   - Outro: fade / resolution
-
-6. PRO TIP
-   - Keep verses low energy
-   - Push emotional peak in chorus
-   - Use repetition for memorability
 """
 
-# ----------------------------
-# UI
-# ----------------------------
+    output = generator(
+        song_prompt,
+        max_new_tokens=220,
+        temperature=1.0,
+        do_sample=True,
+        pad_token_id=50256
+    )
 
-prompt = st.text_input("🎤 Describe your song idea")
-key = st.selectbox("🎹 Key", list(KEYS.keys()))
+    text = output[0]["generated_text"]
 
-if st.button("Generate Full Song"):
+    # remove prompt from output
+    text = text.replace(song_prompt, "")
 
-    mood = detect_mood(prompt)
-    chords = generate_chords(key)
-    tempo = generate_tempo(mood)
+    return text.strip()
 
-    verse = pick_lines(VERSE_LINES, mood)
-    chorus = pick_lines(CHORUS_LINES, mood)
+def explain_song(key, mood, tempo):
 
-    song = build_song(chords, verse, chorus)
+    return f"""
+KEY: {key}
 
-    st.subheader("🎼 FULL SONG")
-    st.text(song)
+Mood: {mood}
 
-    st.subheader("🎭 Mood")
-    st.write(mood)
+Tempo: {tempo} BPM
 
-    st.subheader("🎹 Chords")
-    st.write(chords)
+HOW TO PRODUCE:
+
+1. Start with piano and play the chord progression.
+
+2. Write a melody that mostly uses notes from the key.
+
+3. Keep verses quieter and simpler.
+
+4. Make the chorus bigger:
+- stronger melody
+- higher energy
+- fuller instruments
+
+5. Bass should follow root notes.
+
+6. Drums:
+- Sad: soft kick + light snare
+- Happy: punchy pop groove
+- Chill: laid-back drums
+- Epic: huge drums and cymbals
+
+7. Add reverb and delay for atmosphere.
+
+8. Record vocals last and stack harmonies in the chorus.
+"""
+
+if st.button("🚀 Generate Song"):
+
+    with st.spinner("Writing song..."):
+
+        tempo = generate_tempo(mood)
+
+        chords = generate_chords(key)
+
+        lyrics = generate_song(
+            prompt,
+            mood,
+            language if language else "English"
+        )
+
+    st.subheader("🎹 Chord Progression")
+
+    st.write(" | ".join(chords))
 
     st.subheader("⏱️ Tempo")
+
     st.write(f"{tempo} BPM")
 
-    st.subheader("🎓 Producer Tutor")
-    st.text(tutor(mood, key, tempo))
+    st.subheader("🎼 Lyrics")
+
+    st.text(lyrics)
+
+    st.subheader("🎓 Production Tutor")
+
+    st.text(
+        explain_song(
+            key,
+            mood,
+            tempo
+        )
+        )
