@@ -1,10 +1,10 @@
 import streamlit as st
 import random
 
-st.title("🎹 AI Music Studio (Full Song Generator)")
+st.title("🎹 AI Music Studio (Pro Song Engine)")
 
 # ----------------------------
-# ALL 12 KEYS (FIXED)
+# FULL KEYS
 # ----------------------------
 
 KEYS = {
@@ -30,87 +30,87 @@ MOODS = {
 }
 
 # ----------------------------
-# LANGUAGE-FREE LYRIC SYSTEM
+# LYRIC BANK (NO REPETITION)
 # ----------------------------
 
-def generate_lyrics(prompt, mood):
-    # This works for ANY language because we don't restrict text
-    base_themes = {
-        "sad": [
-            f"I still feel this weight ({prompt})",
-            "time moves but I stay the same",
-            "echoes of what used to be",
-            "fading slowly in my name"
-        ],
-        "happy": [
-            f"everything feels right ({prompt})",
-            "dancing through the endless light",
-            "nothing heavy on my mind",
-            "leaving worries all behind"
-        ],
-        "chill": [
-            f"floating through this moment ({prompt})",
-            "no rush and no opponent",
-            "breathing in the quiet air",
-            "nothing else is really there"
-        ],
-        "epic": [
-            f"rising from the silence ({prompt})",
-            "breaking every single chain",
-            "power building in my veins",
-            "nothing left to hold me back"
-        ]
-    }
-    return base_themes[mood]
+VERSE_LINES = {
+    "sad": [
+        "I walk alone through empty streets",
+        "your memory still follows me",
+        "the night keeps whispering your name",
+        "but nothing feels the same",
+        "I try to move but stay the same",
+        "lost inside this quiet pain"
+    ],
+    "happy": [
+        "sunlight hits my window bright",
+        "everything feels just right",
+        "dancing through another day",
+        "nothing getting in my way",
+        "smiling like I own the sky",
+        "feeling like I can fly"
+    ],
+    "chill": [
+        "slow waves drifting in my mind",
+        "leaving all the stress behind",
+        "breathing deep and letting go",
+        "watching all my worries slow",
+        "floating through the evening air",
+        "nothing heavy anywhere"
+    ],
+    "epic": [
+        "rising from the broken ground",
+        "hearing distant battle sound",
+        "fire burning in my soul",
+        "taking back complete control",
+        "nothing ever holds me down",
+        "I will never touch the ground"
+    ]
+}
+
+CHORUS_LINES = {
+    "sad": [
+        "I still feel you in the rain",
+        "calling out your name again",
+        "but you're gone and I'm alone",
+        "trying to find my way back home"
+    ],
+    "happy": [
+        "we are living in the light",
+        "everything is feeling right",
+        "nothing stopping what we are",
+        "we are shining like a star"
+    ],
+    "chill": [
+        "everything is flowing slow",
+        "letting all the tension go",
+        "this is where I want to be",
+        "lost inside the harmony"
+    ],
+    "epic": [
+        "I will rise above the flame",
+        "nothing ever stays the same",
+        "hear the thunder in my chest",
+        "I will never settle less"
+    ]
+}
 
 # ----------------------------
-# FULL SONG STRUCTURE (2–3 MIN STYLE)
-# ----------------------------
-
-def build_full_song(chords, lyrics):
-    song = ""
-
-    # Verse 1
-    song += "VERSE 1\n"
-    for i in range(4):
-        song += chords[i] + "   " + lyrics[i] + "\n"
-
-    # Chorus
-    song += "\nCHORUS\n"
-    for i in range(4):
-        song += chords[i] + "   " + lyrics[i] + " (hook)\n"
-
-    # Verse 2 (variation)
-    song += "\nVERSE 2\n"
-    random.shuffle(chords)
-    for i in range(4):
-        song += chords[i] + "   " + lyrics[i] + "\n"
-
-    # Chorus again
-    song += "\nCHORUS\n"
-    for i in range(4):
-        song += chords[i] + "   " + lyrics[i] + " (repeat)\n"
-
-    # Outro
-    song += "\nOUTRO\n"
-    song += chords[0] + "   fading out...\n"
-
-    return song
-
-# ----------------------------
-# MUSIC ENGINE
+# ENGINE
 # ----------------------------
 
 def detect_mood(text):
     text = text.lower()
-
-    if any(w in text for w in ["sad", "lonely", "cry", "miss", "rain"]):
+    if any(w in text for w in ["sad", "miss", "lonely", "cry"]):
         return "sad"
-    if any(w in text for w in ["happy", "love", "fun", "party"]):
+    if any(w in text for w in ["happy", "love", "party", "fun"]):
         return "happy"
-    if any(w in text for w in ["calm", "chill", "peace", "relax"]):
+    if any(w in text for w in ["calm", "chill", "peace"]):
         return "chill"
     return "epic"
+
+def pick_lines(bank, mood):
+    return random.sample(bank[mood], 4)
 
 def generate_chords(key):
     return random.sample(KEYS[key], 4)
@@ -119,26 +119,91 @@ def generate_tempo(mood):
     return random.randint(*MOODS[mood])
 
 # ----------------------------
+# SONG BUILDER (FIXED STRUCTURE)
+# ----------------------------
+
+def build_song(chords, verse, chorus):
+    song = ""
+
+    song += "VERSE 1\n"
+    for i in range(4):
+        song += f"{chords[i]}   {verse[i]}\n"
+
+    song += "\nCHORUS\n"
+    for i in range(4):
+        song += f"{chords[i]}   {chorus[i]}\n"
+
+    song += "\nVERSE 2\n"
+    random.shuffle(verse)
+    for i in range(4):
+        song += f"{chords[i]}   {verse[i]}\n"
+
+    song += "\nCHORUS\n"
+    for i in range(4):
+        song += f"{chords[i]}   {chorus[i]}\n"
+
+    song += "\nOUTRO\n"
+    song += f"{chords[0]}   fading out...\n"
+
+    return song
+
+# ----------------------------
+# MUSIC TUTOR (NEW FEATURE)
+# ----------------------------
+
+def tutor(mood, key, tempo):
+    return f"""
+🎓 MUSIC PRODUCTION GUIDE
+
+1. KEY: {key}
+   - This sets the emotional foundation of your track.
+
+2. MOOD: {mood}
+   - Drives melody style + lyric emotion.
+
+3. TEMPO: {tempo} BPM
+   - Slow (60–85): emotional / sad / ambient
+   - Mid (85–120): chill / pop
+   - Fast (120–160): energetic / epic
+
+4. CHORDS
+   - Use I–V–vi–IV style movement for mainstream sound
+   - Minor chords = emotional weight
+   - Major chords = brightness
+
+5. SONG STRUCTURE
+   - Verse: storytelling
+   - Chorus: emotional hook (repeatable idea)
+   - Outro: fade / resolution
+
+6. PRO TIP
+   - Keep verses low energy
+   - Push emotional peak in chorus
+   - Use repetition for memorability
+"""
+
+# ----------------------------
 # UI
 # ----------------------------
 
-prompt = st.text_input("🎤 Describe your song (ANY language works)")
-key = st.selectbox("🎹 Pick a key (all 12 available)", list(KEYS.keys()))
+prompt = st.text_input("🎤 Describe your song idea")
+key = st.selectbox("🎹 Key", list(KEYS.keys()))
 
-if st.button("🚀 Generate Full Song"):
+if st.button("Generate Full Song"):
 
     mood = detect_mood(prompt)
-
     chords = generate_chords(key)
     tempo = generate_tempo(mood)
-    lyrics = generate_lyrics(prompt, mood)
 
-    full_song = build_full_song(chords, lyrics)
+    verse = pick_lines(VERSE_LINES, mood)
+    chorus = pick_lines(CHORUS_LINES, mood)
 
-    st.subheader("🎼 FULL SONG (2–3 MIN STRUCTURE)")
-    st.text(full_song)
+    song = build_song(chords, verse, chorus)
 
-    st.subheader("🎭 Mood Detected")
+    st.subheader("🎼 FULL SONG")
+    st.text(song)
+
+    st.subheader("🎭 Mood")
     st.write(mood)
 
     st.subheader("🎹 Chords")
@@ -147,5 +212,5 @@ if st.button("🚀 Generate Full Song"):
     st.subheader("⏱️ Tempo")
     st.write(f"{tempo} BPM")
 
-    st.subheader("🧠 AI Logic")
-    st.write("Prompt → emotion detection → harmony selection → lyrical theme → full song structure")
+    st.subheader("🎓 Producer Tutor")
+    st.text(tutor(mood, key, tempo))
